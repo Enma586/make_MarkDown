@@ -1,0 +1,153 @@
+{
+  "app": {
+    "title": "docu-stream",
+    "lines": "L",
+    "words": "P",
+    "bytes": "B"
+  },
+  "header": {
+    "pasteClipboard": "Pegar del portapapeles",
+    "importFiles": "Importar archivos",
+    "importRepo": "Importar repositorio",
+    "structureAI": "Estructurar con IA",
+    "configureAI": "Configurar IA",
+    "search": "Buscar",
+    "toc": "Tabla de contenidos",
+    "split": "Vista dividida",
+    "editorOnly": "Solo editor",
+    "previewOnly": "Solo vista previa",
+    "copyMarkdown": "Copiar Markdown",
+    "copyHTML": "Copiar HTML",
+    "clear": "Limpiar",
+    "export": "Exportar",
+    "toggleTheme": "Cambiar tema"
+  },
+  "sidebar": {
+    "title": "Blueprints",
+    "templates": "plantillas",
+    "clickToInject": "click para inyectar",
+    "categories": {
+      "structure": "Estructura",
+      "infra": "Infraestructura",
+      "backend": "Backend",
+      "ops": "Operaciones",
+      "docs": "Documentacion"
+    }
+  },
+  "editorArea": {
+    "editor": "Editor",
+    "preview": "Vista previa"
+  },
+  "editor": {
+    "placeholder": "Comienza a escribir tu documentacion...",
+    "lines": "Lineas",
+    "words": "Palabras",
+    "buffer": "Buffer"
+  },
+  "preview": {
+    "placeholder": "vista previa",
+    "contents": "Contenidos",
+    "noHeadings": "sin encabezados"
+  },
+  "toolbar": {
+    "h1": "Titulo 1",
+    "h2": "Titulo 2",
+    "h3": "Titulo 3",
+    "bold": "Negrita",
+    "italic": "Cursiva",
+    "strikethrough": "Tachado",
+    "inlineCode": "Codigo en linea",
+    "codeBlock": "Bloque de codigo",
+    "link": "Enlace",
+    "blockquote": "Cita",
+    "bulletList": "Lista con viñetas",
+    "numberedList": "Lista numerada",
+    "table": "Tabla",
+    "hr": "Linea horizontal"
+  },
+  "search": {
+    "placeholder": "Buscar...",
+    "of": "de",
+    "next": "Siguiente",
+    "prev": "Anterior"
+  },
+  "importer": {
+    "title": "Importar archivos",
+    "subtitle": "arrastra, selecciona o pega",
+    "dragHere": "Arrastra archivos aqui o click para seleccionar",
+    "supported": ".md .ts .py .sql .json .yaml .go .rs .js y mas",
+    "or": "o",
+    "pasteClipboard": "Pegar del portapapeles",
+    "cancel": "Cancelar",
+    "importAndStructure": "Importar y estructurar",
+    "maxSize": "Max 5MB",
+    "readError": "Error al leer"
+  },
+  "repoImporter": {
+    "title": "Importar repositorio",
+    "url": "URL del repositorio",
+    "urlPlaceholder": "github.com/owner/repo",
+    "branch": "Branch",
+    "branchPlaceholder": "main",
+    "token": "Token (opcional)",
+    "tokenPlaceholder": "ghp_...",
+    "scan": "Escanear repositorio",
+    "scanning": "Escaneando {{owner}}/{{repo}}...",
+    "filesSelected": "{{selected}} de {{total}} archivos",
+    "selectAll": "Seleccionar todo",
+    "none": "Ninguno",
+    "useAI": "Estructurar con IA",
+    "useAINote": "(configura tu API primero)",
+    "process": "Procesar {{count}} archivos",
+    "processing": "Procesando con IA...",
+    "downloading": "Descargando archivos...",
+    "cancel": "Cancelar",
+    "done": "Documentacion generada",
+    "filesProcessed": "{{count}} archivos procesados",
+    "invalidUrl": "URL de GitHub invalida. Usa: github.com/owner/repo o owner/repo",
+    "scanError": "Error al escanear el repositorio",
+    "processError": "Error al procesar archivos",
+    "selectFolder": "Seleccionar todo",
+    "deselectFolder": "Deseleccionar todo"
+  },
+  "ai": {
+    "settings": "Configurar IA",
+    "presets": "Presets",
+    "apiUrl": "URL de la API",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Dejar vacio si no se necesita (Ollama, LM Studio)",
+    "model": "Modelo",
+    "modelPlaceholder": "llama3",
+    "processing": "Estructurando con IA ({{model}})...",
+    "noContent": "No hay contenido para analizar",
+    "errorTitle": "Error de IA",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saved": "Guardado"
+  },
+  "banners": {
+    "restoreMsg": "Se encontro un documento guardado previamente.",
+    "ignore": "Ignorar",
+    "restoreBtn": "Restaurar"
+  },
+  "defaultContent": {
+    "title": "docu-stream",
+    "subtitle": "Tu editor de documentacion con vista previa en tiempo real.",
+    "start": "Comienza aqui",
+    "step1": "Selecciona un **blueprint** del panel lateral",
+    "step2": "**Importa archivos** o **pega del portapapeles** — se estructuran automaticamente",
+    "step3": "Usa **IA** para una estructuracion mas inteligente",
+    "step4": "Observa la vista previa al instante",
+    "importPaste": "Importar y pegar",
+    "importDesc": "- **Importar archivos** (icono de subir): arrastra archivos o selecciona. Se detecta el lenguaje y se divide en secciones automaticamente.",
+    "pasteDesc": "- **Pegar del portapapeles** (icono de portapapeles): lee tu clipboard y lo convierte en documentacion estructurada con un click.",
+    "smartDesc": "- **Smart paste**: cuando pegues codigo directamente en el editor, se envuelve en un bloque de codigo con el lenguaje detectado.",
+    "aiTitle": "IA",
+    "aiDesc1": "- **Estructurar con IA** (icono de estrella): envia el contenido del editor a un modelo de IA para que lo analice y genere documentacion estructurada profesional.",
+    "aiDesc2": "- **Configurar IA** (icono de engranaje junto a la estrella): conecta con Ollama, LM Studio, Groq, OpenRouter, OpenAI o cualquier API compatible.",
+    "shortcuts": "Atajos",
+    "shortcut1": "`d` — cambiar tema",
+    "shortcut2": "`Ctrl+F` — buscar",
+    "shortcut3": "Arrastra un archivo al editor para importarlo directo"
+  }
+}
