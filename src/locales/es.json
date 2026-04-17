@@ -108,7 +108,13 @@
     "scanError": "Error al escanear el repositorio",
     "processError": "Error al procesar archivos",
     "selectFolder": "Seleccionar todo",
-    "deselectFolder": "Deseleccionar todo"
+    "deselectFolder": "Deseleccionar todo",
+    "docMode": "Modo",
+    "compact": "Compacto",
+    "detailed": "Detallado",
+    "excludeLibs": "Excluir archivos de librerias (UI, test, generated)",
+    "filterFiles": "Filtrar archivos...",
+    "noResults": "Sin resultados"
   },
   "ai": {
     "settings": "Configurar IA",

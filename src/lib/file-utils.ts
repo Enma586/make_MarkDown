@@ -489,6 +489,116 @@ export function extractEssentialCode(content: string, lang: string): string {
 
 // === Repo documentation generation ===
 
+const LIBRARY_FILE_PATTERNS = [
+  /\/components\/ui\//,
+  /node_modules\//,
+  /\.generated\./,
+  /\.auto\./,
+  /\/dist\//,
+  /\/build\//,
+  /\/vendor\//,
+  /\/__snapshots__\//,
+  /\.stories\./,
+  /\.test\./,
+  /\.spec\./,
+  /\.d\.ts$/,
+];
+
+export function shouldExcludeFromDocs(path: string): boolean {
+  for (const pattern of LIBRARY_FILE_PATTERNS) {
+    if (pattern.test(path)) return true;
+  }
+  return false;
+}
+
+function groupFilesByDirectory(files: Array<{ name: string; content: string }>): Map<string, Array<{ name: string; content: string }>> {
+  const groups = new Map<string, Array<{ name: string; content: string }>>();
+
+  for (const file of files) {
+    const parts = file.name.split("/");
+    const dir = parts.length > 1 ? parts.slice(0, -1).join("/") : ".";
+    if (!groups.has(dir)) groups.set(dir, []);
+    groups.get(dir)!.push(file);
+  }
+
+  return groups;
+}
+
+function generateToc(sections: Array<{ title: string; depth: number }>): string {
+  return sections.map((s) => {
+    const indent = "  ".repeat(s.depth - 2);
+    const slug = slugifyToc(s.title);
+    return `${indent}- [${s.title}](#${slug})`;
+  }).join("\n");
+}
+
+function slugifyToc(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function summarizeConfig(configFiles: Array<{ name: string; content: string }>): string {
+  if (configFiles.length === 0) return "";
+
+  const rows = configFiles.map((f) => {
+    const baseName = f.name.split("/").pop() || f.name;
+    const ext = baseName.includes(".") ? baseName.split(".").pop()! : "";
+    let summary = "";
+
+    if (baseName === "package.json") {
+      try {
+        const pkg = JSON.parse(f.content);
+        const deps = Object.keys(pkg.dependencies || {}).length;
+        const devDeps = Object.keys(pkg.devDependencies || {}).length;
+        summary = `${deps} deps, ${devDeps} devDeps`;
+      } catch {
+        summary = "Node.js project manifest";
+      }
+    } else if (baseName.includes("tsconfig")) {
+      try {
+        const ts = JSON.parse(f.content);
+        const target = ts.compilerOptions?.target || "ES2022";
+        const strict = ts.compilerOptions?.strict ? "strict" : "no-strict";
+        summary = `Target: ${target}, ${strict}`;
+      } catch {
+        summary = "TypeScript configuration";
+      }
+    } else if (baseName.includes("eslint")) {
+      summary = "ESLint code linting";
+    } else if (baseName.includes("prettier")) {
+      summary = "Prettier code formatting";
+    } else if (baseName.includes("vite.config")) {
+      summary = "Vite bundler config";
+    } else if (baseName.includes("next.config")) {
+      summary = "Next.js framework config";
+    } else if (baseName.includes("tailwind")) {
+      summary = "Tailwind CSS config";
+    } else if (baseName.includes("docker-compose")) {
+      summary = "Docker multi-container orchestration";
+    } else if (baseName.includes("webpack")) {
+      summary = "Webpack bundler config";
+    } else if (baseName.includes("jest") || baseName.includes("vitest")) {
+      summary = "Test runner config";
+    } else if (baseName.includes("components.json")) {
+      summary = "shadcn/ui component registry";
+    } else if (baseName === ".gitignore") {
+      summary = "Git ignored files";
+    } else {
+      summary = `${getLanguage(baseName)} config`;
+    }
+
+    return `| \`${baseName}\` | ${summary} | \`${ext}\` |`;
+  });
+
+  return `### Configuracion\n\n| Archivo | Descripcion | Tipo |\n|---------|-------------|------|\n${rows.join("\n")}`;
+}
+
+export type DocMode = "compact" | "detailed";
+
 function buildFolderTree(files: string[]): string {
   interface TreeNode {
     name: string;
@@ -840,19 +950,33 @@ export function repoFilesToMarkdown(
   repoName: string,
   owner?: string,
   aiDescriptions?: Map<string, string>,
+  mode: DocMode = "detailed",
 ): string {
   if (files.length === 0) return "";
 
-  const tree = buildFolderTree(files.map(f => f.name));
+  if (mode === "compact") {
+    return generateCompactDocs(files, repoName, owner, aiDescriptions);
+  }
+
+  return generateDetailedDocs(files, repoName, owner, aiDescriptions);
+}
+
+function generateCompactDocs(
+  files: Array<{ name: string; content: string }>,
+  repoName: string,
+  owner?: string,
+  aiDescriptions?: Map<string, string>,
+): string {
+  const tree = buildFolderTree(files.map((f) => f.name));
+  const tocSections: Array<{ title: string; depth: number }> = [];
 
   let md = `# ${repoName}\n\n`;
-
   if (owner) {
     md += `> Repositorio: [${owner}/${repoName}](https://github.com/${owner}/${repoName})\n\n`;
   }
 
-  md += `## Jerarquia de carpetas\n\n\`\`\`\n${repoName}/\n${tree}\n\`\`\`\n\n---\n\n`;
-  md += `## Archivos de codigo fuente\n\n`;
+  md += `## Jerarquia de carpetas\n\n\`\`\`\n${repoName}/\n${tree}\n\`\`\`\n\n`;
+  tocSections.push({ title: "Jerarquia de carpetas", depth: 2 });
 
   const routeFiles: Array<{ name: string; content: string }> = [];
   const dockerFiles: Array<{ name: string; content: string }> = [];
@@ -871,14 +995,140 @@ export function repoFilesToMarkdown(
     }
   }
 
-  for (const file of regularFiles) {
-    const ext = getExtension(file.name);
-    if (ext === "md" || ext === "mdx" || ext === "txt") {
-      md += `#### \`${file.name}\`\n**Proposito:** Archivo de documentacion/markdown.\n\n`;
-    } else if (aiDescriptions?.has(file.name)) {
-      md += `#### \`${file.name}\`\n${aiDescriptions.get(file.name)}\n\n`;
+  tocSections.push({ title: "Modulos", depth: 2 });
+
+  const dirGroups = groupFilesByDirectory(regularFiles);
+  const modulesSection: string[] = [];
+
+  const sortedDirs = Array.from(dirGroups.keys()).sort();
+  for (const dir of sortedDirs) {
+    const dirFiles = dirGroups.get(dir)!;
+    const dirLabel = dir === "." ? "Raiz" : dir;
+    tocSections.push({ title: dirLabel, depth: 3 });
+
+    const tableRows = dirFiles.map((file) => {
+      const ext = getExtension(file.name);
+      const fileName = file.name.split("/").pop() || file.name;
+      let description: string;
+
+      if (ext === "md" || ext === "mdx" || ext === "txt") {
+        description = "Documentacion/Markdown";
+      } else if (aiDescriptions?.has(file.name)) {
+        description = aiDescriptions.get(file.name)!.replace(/^\*\*Proposito:\s*\*\*\s*/, "");
+      } else {
+        description = generateFileDescription(file.content, file.name).replace(/^\*\*Proposito:\s*\*\*\s*/, "");
+      }
+
+      return `| \`${fileName}\` | ${description} |`;
+    });
+
+    modulesSection.push(`### ${dirLabel}\n\n| Archivo | Descripcion |\n|---------|------------|\n${tableRows.join("\n")}`);
+  }
+
+  if (dockerFiles.length > 0) {
+    tocSections.push({ title: "Dockerfiles", depth: 2 });
+  }
+  if (routeFiles.length > 0) {
+    tocSections.push({ title: "Rutas / API", depth: 2 });
+  }
+  if (configFiles.length > 0) {
+    tocSections.push({ title: "Configuracion", depth: 2 });
+  }
+
+  md += `## Tabla de Contenidos\n\n${generateToc(tocSections)}\n\n---\n\n`;
+  md += `## Modulos\n\n${modulesSection.join("\n\n")}\n\n`;
+
+  if (dockerFiles.length > 0) {
+    md += `---\n\n## Dockerfiles\n\n`;
+    for (const file of dockerFiles) {
+      if (aiDescriptions?.has(file.name)) {
+        md += `${aiDescriptions.get(file.name)}\n\n`;
+      } else {
+        md += `${analyzeDockerfile(file.content, file.name)}\n\n`;
+      }
+    }
+  }
+
+  if (routeFiles.length > 0) {
+    md += `---\n\n## Rutas / API\n\n`;
+    for (const file of routeFiles) {
+      const lang = getLanguage(file.name);
+      md += `### \`${file.name}\`\n\`\`\`${lang}\n${file.content.trimEnd()}\n\`\`\`\n\n`;
+    }
+  }
+
+  if (configFiles.length > 0) {
+    md += `---\n\n${summarizeConfig(configFiles)}\n\n`;
+  }
+
+  return md;
+}
+
+function generateDetailedDocs(
+  files: Array<{ name: string; content: string }>,
+  repoName: string,
+  owner?: string,
+  aiDescriptions?: Map<string, string>,
+): string {
+  const tree = buildFolderTree(files.map((f) => f.name));
+  const tocSections: Array<{ title: string; depth: number }> = [];
+
+  let md = `# ${repoName}\n\n`;
+
+  if (owner) {
+    md += `> Repositorio: [${owner}/${repoName}](https://github.com/${owner}/${repoName})\n\n`;
+  }
+
+  md += `## Jerarquia de carpetas\n\n\`\`\`\n${repoName}/\n${tree}\n\`\`\`\n\n`;
+  tocSections.push({ title: "Jerarquia de carpetas", depth: 2 });
+
+  const routeFiles: Array<{ name: string; content: string }> = [];
+  const dockerFiles: Array<{ name: string; content: string }> = [];
+  const configFiles: Array<{ name: string; content: string }> = [];
+  const regularFiles: Array<{ name: string; content: string }> = [];
+
+  for (const file of files) {
+    if (isDockerfile(file.name)) {
+      dockerFiles.push(file);
+    } else if (isRouteFile(file.name, file.content)) {
+      routeFiles.push(file);
+    } else if (isConfigFile(file.name)) {
+      configFiles.push(file);
     } else {
-      md += `#### \`${file.name}\`\n${generateFileDescription(file.content, file.name)}\n\n`;
+      regularFiles.push(file);
+    }
+  }
+
+  tocSections.push({ title: "Archivos de codigo fuente", depth: 2 });
+
+  const dirGroups = groupFilesByDirectory(regularFiles);
+  for (const dir of Array.from(dirGroups.keys()).sort()) {
+    const dirLabel = dir === "." ? "Raiz" : dir;
+    tocSections.push({ title: dirLabel, depth: 3 });
+  }
+
+  if (routeFiles.length > 0) tocSections.push({ title: "Archivos de rutas", depth: 2 });
+  if (dockerFiles.length > 0) tocSections.push({ title: "Dockerfiles", depth: 2 });
+  if (configFiles.length > 0) tocSections.push({ title: "Archivos de configuracion", depth: 2 });
+
+  md += `## Tabla de Contenidos\n\n${generateToc(tocSections)}\n\n---\n\n`;
+  md += `## Archivos de codigo fuente\n\n`;
+
+  for (const dir of Array.from(dirGroups.keys()).sort()) {
+    const dirFiles = dirGroups.get(dir)!;
+    const dirLabel = dir === "." ? "Raiz" : dir;
+    md += `### ${dirLabel}\n\n`;
+
+    for (const file of dirFiles) {
+      const ext = getExtension(file.name);
+      const fileName = file.name.split("/").pop() || file.name;
+      if (ext === "md" || ext === "mdx" || ext === "txt") {
+        md += `#### \`${fileName}\`\n**Proposito:** Archivo de documentacion/markdown.\n\n`;
+      } else if (aiDescriptions?.has(file.name)) {
+        md += `#### \`${fileName}\`\n${aiDescriptions.get(file.name)}\n\n`;
+      } else {
+        md += `#### \`${fileName}\`\n${generateFileDescription(file.content, file.name)}\n\n`;
+      }
     }
   }
 

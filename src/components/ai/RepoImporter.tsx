@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { GitFork, X, FolderTree, FileCode, Loader2, AlertCircle, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { GitFork, X, FolderTree, FileCode, Loader2, AlertCircle, Check, ChevronDown, ChevronRight, Search, FileText, List } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { parseGitHubUrl, fetchRepoTree, filterRepoFiles, fetchMultipleFiles, type RepoFile } from "@/lib/github-service";
-import { repoFilesToMarkdown, isRouteFile, isConfigFile, isDockerfile, generateFileDescription, analyzeDockerfile } from "@/lib/file-utils";
+import { repoFilesToMarkdown, isRouteFile, isConfigFile, isDockerfile, generateFileDescription, analyzeDockerfile, shouldExcludeFromDocs, type DocMode } from "@/lib/file-utils";
 import { structureWithAI, describeFileWithAI } from "@/lib/ai-service";
 import type { AISettings } from "@/hooks/use-ai-settings";
 
@@ -180,6 +180,9 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [useAI, setUseAI] = useState(false);
+  const [docMode, setDocMode] = useState<DocMode>("compact");
+  const [excludeLibs, setExcludeLibs] = useState(true);
+  const [searchFilter, setSearchFilter] = useState("");
   const abortRef = useRef(false);
 
   useEffect(() => {
@@ -193,6 +196,9 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
       setSelectedPaths(new Set());
       setProgress({ done: 0, total: 0 });
       setUseAI(false);
+      setDocMode("compact");
+      setExcludeLibs(true);
+      setSearchFilter("");
       abortRef.current = false;
     }
   }, [open]);
@@ -212,7 +218,10 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
       const tree = await fetchRepoTree({ ...parsed, branch: parsed.branch }, token || undefined);
       const codeFiles = filterRepoFiles(tree);
       setAllFiles(codeFiles);
-      setSelectedPaths(new Set(codeFiles.map((f) => f.path)));
+      const initialSelection = excludeLibs
+        ? codeFiles.filter((f) => !shouldExcludeFromDocs(f.path)).map((f) => f.path)
+        : codeFiles.map((f) => f.path);
+      setSelectedPaths(new Set(initialSelection));
       setStep("select");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("repoImporter.scanError"));
@@ -287,9 +296,9 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
           setProgress({ done: i + 1, total: mappedFiles.length });
         }
 
-        fullMarkdown = repoFilesToMarkdown(mappedFiles, parsed.repo, parsed.owner, descriptions);
+        fullMarkdown = repoFilesToMarkdown(mappedFiles, parsed.repo, parsed.owner, descriptions, docMode);
       } else {
-        fullMarkdown = repoFilesToMarkdown(mappedFiles, parsed.repo, parsed.owner);
+        fullMarkdown = repoFilesToMarkdown(mappedFiles, parsed.repo, parsed.owner, undefined, docMode);
       }
 
       if (!fullMarkdown.trim()) {
@@ -309,10 +318,17 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
     onClose();
   };
 
-  if (!open) return null;
+  const filteredFiles = useMemo(() => {
+    if (!searchFilter.trim()) return allFiles;
+    const lower = searchFilter.toLowerCase();
+    return allFiles.filter((f) => f.path.toLowerCase().includes(lower));
+  }, [allFiles, searchFilter]);
 
-  const tree = buildFileTree(allFiles);
+  const filteredTree = useMemo(() => buildFileTree(filteredFiles), [filteredFiles]);
+
   const parsedUrl = parseGitHubUrl(url);
+
+  if (!open) return null;
 
   return (
     <AnimatePresence>
@@ -425,7 +441,12 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setSelectedPaths(new Set(allFiles.map((f) => f.path)))}
+                      onClick={() => {
+                        const filesToSelect = excludeLibs
+                          ? allFiles.filter((f) => !shouldExcludeFromDocs(f.path))
+                          : allFiles;
+                        setSelectedPaths(new Set(filesToSelect.map((f) => f.path)));
+                      }}
                       className="text-[9px] font-mono text-primary hover:underline"
                     >
                       {t("repoImporter.selectAll")}
@@ -439,7 +460,7 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -458,11 +479,70 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
                       {aiSettings.model}
                     </span>
                   )}
+
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <span className="text-[9px] font-mono text-muted-foreground/50 uppercase">{t("repoImporter.docMode")}:</span>
+                    <button
+                      onClick={() => setDocMode("compact")}
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${docMode === "compact" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50"}`}
+                    >
+                      <List className="w-3 h-3" />
+                      {t("repoImporter.compact")}
+                    </button>
+                    <button
+                      onClick={() => setDocMode("detailed")}
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${docMode === "detailed" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50"}`}
+                    >
+                      <FileText className="w-3 h-3" />
+                      {t("repoImporter.detailed")}
+                    </button>
+                  </div>
                 </div>
 
-                <ScrollArea className="h-64 border border-border/30 rounded-lg">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={excludeLibs}
+                    onChange={(e) => {
+                      setExcludeLibs(e.target.checked);
+                      if (e.target.checked) {
+                        const toRemove = allFiles.filter((f) => shouldExcludeFromDocs(f.path)).map((f) => f.path);
+                        setSelectedPaths((prev) => {
+                          const next = new Set(prev);
+                          toRemove.forEach((p) => next.delete(p));
+                          return next;
+                        });
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-[11px] text-muted-foreground">
+                    {t("repoImporter.excludeLibs")}
+                  </span>
+                </label>
+
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40" />
+                  <input
+                    type="text"
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    placeholder={t("repoImporter.filterFiles")}
+                    className="w-full h-8 pl-7 pr-3 rounded-md border border-border/30 bg-transparent text-[11px] font-mono placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  {searchFilter && (
+                    <button
+                      onClick={() => setSearchFilter("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-foreground"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <ScrollArea className="h-52 border border-border/30 rounded-lg">
                   <div className="p-1">
-                    {tree.map((node) => (
+                    {filteredTree.map((node) => (
                       <FileTreeNode
                         key={node.path}
                         node={node}
@@ -473,6 +553,11 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
                         t={t}
                       />
                     ))}
+                    {filteredFiles.length === 0 && searchFilter && (
+                      <div className="text-center py-6 text-[10px] text-muted-foreground/40 font-mono">
+                        {t("repoImporter.noResults")}
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
 

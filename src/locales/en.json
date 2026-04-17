@@ -108,7 +108,13 @@
     "scanError": "Error scanning repository",
     "processError": "Error processing files",
     "selectFolder": "Select all",
-    "deselectFolder": "Deselect all"
+    "deselectFolder": "Deselect all",
+    "docMode": "Mode",
+    "compact": "Compact",
+    "detailed": "Detailed",
+    "excludeLibs": "Exclude library files (UI, test, generated)",
+    "filterFiles": "Filter files...",
+    "noResults": "No results"
   },
   "ai": {
     "settings": "Configure AI",
