@@ -106,7 +106,7 @@ docu-stream/
 
 ## Características
 
-### 📝 Editor Markdown
+###  Editor Markdown
 
 - Edición con **preview en vivo** en modo split, solo editor o solo preview
 - **14 plantillas** predefinidas (Structure, Infra, Backend, Ops, Docs) para comenzar rápido
@@ -116,7 +116,7 @@ docu-stream/
 - **Búsqueda inline** con Ctrl+F y navegación entre resultados
 - **Auto-guardado** con restauración de sesión
 
-### 🤖 Integración con IA
+###  Integración con IA
 
 - Conecta con cualquier API compatible con OpenAI: **Groq, OpenAI, OpenRouter, Ollama, LM Studio**
 - **Reestructuración inteligente**: envía el contenido del editor a la IA para generar documentación profesional
@@ -124,14 +124,14 @@ docu-stream/
 - **Fallback local automático**: si la API falla o no está configurada, genera documentación con análisis estático del código
 - Detección automática de **Vercel**: si estás en producción, bloquea automáticamente los proveedores locales (Ollama, LM Studio)
 
-### 📂 Importación de Archivos
+###  Importación de Archivos
 
 - **Drag-and-drop** de archivos locales al editor
 - **Importación desde portapapeles**
 - Detección automática del lenguaje de programación
 - Estructuración inteligente dividiendo el código en secciones por función/clase
 
-### 🐙 Importación de Repositorios GitHub
+###  Importación de Repositorios GitHub
 
 - Escanea el árbol completo del repositorio vía GitHub API
 - Árbol de archivos navegable con selección individual o por carpeta
@@ -141,12 +141,12 @@ docu-stream/
 - **Análisis del stack tecnológico** detecta frameworks, dependencias clave y arquitectura
 - **Relaciones entre archivos** muestra qué archivos importa y quién lo usa
 
-### 🌐 Internacionalización
+###  Internacionalización
 
 - Soporte completo para **inglés** y **español**
 - Traducciones de toda la interfaz, incluyendo tooltips, modales y contenido por defecto
 
-### 🎨 Personalización
+###  Personalización
 
 - **Tema claro/oscuro** con atajo de teclado (tecla `D`)
 - Diseño **responsivo** con vista adaptada para móviles
@@ -209,8 +209,8 @@ vercel --prod
 <p align="center">
   <a href="https://edit-code-md.vercel.app/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/🚀_Abrir_aplicación-000?style=for-the-badge">
-      <img alt="Abrir aplicación" src="https://img.shields.io/badge/🚀_Abrir_aplicación-000?style=for-the-badge">
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/_Abrir_aplicación-000?style=for-the-badge">
+      <img alt="Abrir aplicación" src="https://img.shields.io/badge/_Abrir_aplicación-000?style=for-the-badge">
     </picture>
   </a>
 </p>
