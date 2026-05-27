@@ -59,7 +59,7 @@ export const FileImporter = ({ open, onClose, onImport }: FileImporterProps) => 
     }
 
     setFiles((prev) => [...prev, ...entries]);
-  }, []);
+  }, [t]);
 
   const handlePasteFromClipboard = async () => {
     setIsPasting(true);
@@ -145,7 +145,7 @@ export const FileImporter = ({ open, onClose, onImport }: FileImporterProps) => 
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="w-full max-w-lg mx-4 bg-background border border-border/40 rounded-xl shadow-2xl overflow-hidden"
+          className="w-full max-w-lg mx-2 sm:mx-4 bg-background border border-border/40 rounded-xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-3 border-b border-border/30">

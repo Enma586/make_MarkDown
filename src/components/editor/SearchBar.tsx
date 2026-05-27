@@ -6,16 +6,32 @@ import { Input } from "@/components/ui/input";
 
 interface SearchBarProps {
   value: string;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  editorRef: React.RefObject<{ textareaRef: React.RefObject<HTMLTextAreaElement | null> } | null>;
   onClose: () => void;
 }
 
-export const SearchBar = ({ value, textareaRef, onClose }: SearchBarProps) => {
+export const SearchBar = ({ value, editorRef, onClose }: SearchBarProps) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [matchIndex, setMatchIndex] = useState(-1);
   const [totalMatches, setTotalMatches] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const getTextarea = useCallback((): HTMLTextAreaElement | null => {
+    return editorRef.current?.textareaRef.current ?? null;
+  }, [editorRef]);
+
+  const highlightMatch = useCallback((start: number, length: number) => {
+    const ta = getTextarea();
+    if (!ta) return;
+    ta.focus();
+    ta.setSelectionRange(start, start + length);
+
+    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
+    const textBefore = ta.value.slice(0, start);
+    const lineCount = textBefore.split("\n").length;
+    ta.scrollTop = Math.max(0, (lineCount - 3) * lineHeight);
+  }, [getTextarea]);
 
   const findMatches = useCallback(
     (searchQuery: string) => {
@@ -46,20 +62,8 @@ export const SearchBar = ({ value, textareaRef, onClose }: SearchBarProps) => {
         setMatchIndex(-1);
       }
     },
-    [value, matchIndex],
+    [value, matchIndex, highlightMatch],
   );
-
-  const highlightMatch = (start: number, length: number) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    ta.focus();
-    ta.setSelectionRange(start, start + length);
-
-    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
-    const textBefore = ta.value.slice(0, start);
-    const lineCount = textBefore.split("\n").length;
-    ta.scrollTop = Math.max(0, (lineCount - 3) * lineHeight);
-  };
 
   const goToNext = () => {
     if (totalMatches === 0) return;

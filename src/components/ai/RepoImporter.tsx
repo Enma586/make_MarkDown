@@ -344,7 +344,7 @@ export const RepoImporter = ({ open, onClose, onImport, aiSettings, aiConfigured
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="w-full max-w-2xl mx-4 bg-background border border-border/40 rounded-xl shadow-2xl overflow-hidden"
+          className="w-full max-w-2xl mx-2 sm:mx-4 bg-background border border-border/40 rounded-xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-3 border-b border-border/30">

@@ -18,7 +18,7 @@ export const BlueprintSidebar = ({ onInject }: BlueprintSidebarProps) => {
     BLUEPRINTS.filter((b) => b.category === cat);
 
   return (
-    <aside className="w-72 border-r border-border/40 bg-background/60 backdrop-blur-xl flex flex-col h-full">
+    <aside className="w-60 lg:w-72 border-r border-border/40 bg-background/60 backdrop-blur-xl flex flex-col h-full">
       <div className="px-5 py-4 flex items-center gap-3 border-b border-border/30">
         <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
           <Zap className="w-4 h-4 text-primary" />

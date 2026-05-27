@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bold,
@@ -27,7 +27,7 @@ import {
 interface MarkdownToolbarProps {
   value: string;
   onChange: (value: string) => void;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  editorRef: React.RefObject<{ textareaRef: React.RefObject<HTMLTextAreaElement | null> } | null>;
 }
 
 interface ToolbarAction {
@@ -93,19 +93,23 @@ function insertBlock(
 export const MarkdownToolbar = ({
   value,
   onChange,
-  textareaRef,
+  editorRef,
 }: MarkdownToolbarProps) => {
   const { t } = useTranslation();
 
+  const getTextarea = useCallback((): HTMLTextAreaElement | null => {
+    return editorRef.current?.textareaRef.current ?? null;
+  }, [editorRef]);
+
   const exec = useCallback(
     (fn: (ta: HTMLTextAreaElement, v: string) => void) => {
-      const ta = textareaRef.current;
+      const ta = getTextarea();
       if (ta) fn(ta, value);
     },
-    [textareaRef, value],
+    [getTextarea, value],
   );
 
-  const actions: ToolbarAction[] = [
+  const actions = useMemo<ToolbarAction[]>(() => [
     {
       icon: <Heading1 className="w-3.5 h-3.5" />,
       label: t("toolbar.h1"),
@@ -208,7 +212,7 @@ export const MarkdownToolbar = ({
       shortcut: "",
       action: () => exec((ta, v) => insertBlock(ta, v, "---", onChange)),
     },
-  ];
+  ], [exec, t]);
 
   return (
     <div className="shrink-0 flex items-center gap-0.5 px-2 py-1 border-b border-border/20 bg-muted/20 overflow-x-auto">

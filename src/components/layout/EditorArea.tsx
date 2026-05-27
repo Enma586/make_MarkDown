@@ -16,7 +16,6 @@ interface EditorAreaProps {
   showSearch: boolean;
   showToc: boolean;
   editorRef: RefObject<CodeEditorHandle | null>;
-  textareaRef: RefObject<HTMLTextAreaElement | null>;
   onContentChange: (value: string) => void;
   onSmartPaste: (markdown: string) => void;
   onTocNavigate: (id: string) => void;
@@ -30,7 +29,6 @@ export const EditorArea = ({
   showSearch,
   showToc,
   editorRef,
-  textareaRef,
   onContentChange,
   onSmartPaste,
   onTocNavigate,
@@ -40,9 +38,9 @@ export const EditorArea = ({
 
   const editorBlock = (
     <>
-      <MarkdownToolbar value={content} onChange={onContentChange} textareaRef={textareaRef!} />
-      {showSearch && textareaRef && (
-        <SearchBar value={content} textareaRef={textareaRef} onClose={onCloseSearch} />
+      <MarkdownToolbar value={content} onChange={onContentChange} editorRef={editorRef} />
+      {showSearch && (
+        <SearchBar value={content} editorRef={editorRef} onClose={onCloseSearch} />
       )}
       <CodeEditor
         ref={editorRef}

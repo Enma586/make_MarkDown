@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Settings, X, Check, AlertCircle, Globe, Monitor, Cloud } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,10 +41,12 @@ export const AISettingsModal = ({ open, onClose, settings, onSave, configMessage
   const [form, setForm] = useState<AISettings>(settings);
   const [saved, setSaved] = useState(false);
   const onVercel = useMemo(() => isRunningOnVercel(), []);
+  const prevOpenRef = useRef(open);
 
-  useEffect(() => {
+  if (open && !prevOpenRef.current) {
     setForm(settings);
-  }, [settings, open]);
+  }
+  prevOpenRef.current = open;
 
   const handleSave = () => {
     onSave(form);
@@ -83,7 +85,7 @@ export const AISettingsModal = ({ open, onClose, settings, onSave, configMessage
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="w-full max-w-md mx-4 bg-background border border-border/40 rounded-xl shadow-2xl overflow-hidden"
+          className="w-full max-w-md mx-2 sm:mx-4 bg-background border border-border/40 rounded-xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-3 border-b border-border/30">

@@ -71,7 +71,7 @@ export function useAISettings() {
     if (!settings.apiUrl) return "Ingresa una URL de API compatible con OpenAI";
     if (!settings.model) return "Elige o escribe el nombre del modelo";
     return "";
-  }, [settings.apiUrl]);
+  }, [settings.apiUrl, settings.model]);
 
   return { settings, updateSettings, isConfigured, isLoaded, configMessage };
 }

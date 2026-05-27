@@ -78,7 +78,6 @@ export const Header = ({
   aiConfigured,
   copied,
   theme,
-  language,
   onToggleSidebar,
   onOpenMobileSidebar,
   onClipboardPaste,
@@ -94,6 +93,7 @@ export const Header = ({
   onClear,
   onExport,
   onToggleTheme,
+  language,
   onToggleLanguage,
 }: HeaderProps) => {
   const { t } = useTranslation();
@@ -101,39 +101,45 @@ export const Header = ({
   const langLabel = language === "en" ? "EN" : "ES";
 
   return (
-    <header className="h-11 shrink-0 flex items-center justify-between px-3 border-b border-border/30 bg-background/60 backdrop-blur-xl">
-      <div className="flex items-center gap-2">
+    <header className="h-11 shrink-0 flex items-center justify-between px-2 sm:px-3 border-b border-border/30 bg-background/60 backdrop-blur-xl">
+      <div className="flex items-center gap-1 sm:gap-2 min-w-0">
         {isMobile ? (
-          <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onOpenMobileSidebar}>
+          <Button variant="ghost" size="icon" className="w-7 h-7 shrink-0" onClick={onOpenMobileSidebar}>
             <Zap className="w-3.5 h-3.5" />
           </Button>
         ) : (
-          <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onToggleSidebar}>
+          <Button variant="ghost" size="icon" className="w-7 h-7 shrink-0" onClick={onToggleSidebar}>
             {sidebarOpen ? <PanelLeftClose className="w-3.5 h-3.5" /> : <PanelLeftOpen className="w-3.5 h-3.5" />}
           </Button>
         )}
 
-        <Separator orientation="vertical" className="h-4" />
+        <Separator orientation="vertical" className="h-4 shrink-0" />
 
-        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground shrink-0 hidden sm:inline">
           {t("app.title")}
         </span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:hidden">
+          ds
+        </span>
 
-        <span className="text-[9px] font-mono text-muted-foreground/40 hidden sm:inline">
+        <span className="text-[9px] font-mono text-muted-foreground/40 truncate hidden lg:inline">
           {content.split("\n").length}{t("app.lines")} &middot;{" "}
           {content.trim() ? content.trim().split(/\s+/).length : 0}{t("app.words")} &middot;{" "}
           {new Blob([content]).size}{t("app.bytes")}
         </span>
+        <span className="text-[9px] font-mono text-muted-foreground/30 sm:hidden truncate">
+          {content.split("\n").length}{t("app.lines")}
+        </span>
 
         {savedAt && (
-          <span className="text-[9px] font-mono text-muted-foreground/30 hidden md:inline-flex items-center gap-1">
+          <span className="text-[9px] font-mono text-muted-foreground/30 hidden lg:inline-flex items-center gap-1">
             <Save className="w-2.5 h-2.5" />
             {formatSavedTime(savedAt)}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onClipboardPaste} disabled={isPasting}>
@@ -170,78 +176,84 @@ export const Header = ({
           <TooltipContent side="bottom" className="text-[10px]">{t("header.structureAI")}</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-6 h-6 ${aiConfigured ? "text-primary" : "text-muted-foreground/40"}`}
-              onClick={onOpenAISettings}
-            >
-              <Settings className="w-3 h-3" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-[10px]">{t("header.configureAI")}</TooltipContent>
-        </Tooltip>
+        <div className="hidden sm:flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`w-6 h-6 ${aiConfigured ? "text-primary" : "text-muted-foreground/40"}`}
+                onClick={onOpenAISettings}
+              >
+                <Settings className="w-3 h-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-[10px]">{t("header.configureAI")}</TooltipContent>
+          </Tooltip>
+        </div>
 
         {!isMobile && (
           <>
-            <Separator orientation="vertical" className="h-4" />
+            <Separator orientation="vertical" className="h-4 hidden md:inline" />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onToggleSearch}>
-                  <Search className="w-3.5 h-3.5 text-muted-foreground" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-[10px]">
-                {t("header.search")} <kbd className="ml-1 px-1 py-0.5 rounded bg-muted font-mono text-[9px]">Ctrl+F</kbd>
-              </TooltipContent>
-            </Tooltip>
+            <div className="hidden md:flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onToggleSearch}>
+                    <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[10px]">
+                  {t("header.search")} <kbd className="ml-1 px-1 py-0.5 rounded bg-muted font-mono text-[9px]">Ctrl+F</kbd>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onToggleToc}>
-                  <LayoutList className="w-3.5 h-3.5 text-muted-foreground" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-[10px]">{t("header.toc")}</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onToggleToc}>
+                    <LayoutList className="w-3.5 h-3.5 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[10px]">{t("header.toc")}</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onCycleViewMode}>
-                  {viewMode === "split" ? <Columns2 className="w-3.5 h-3.5 text-muted-foreground" /> : viewMode === "editor" ? <Code2 className="w-3.5 h-3.5 text-muted-foreground" /> : <Eye className="w-3.5 h-3.5 text-muted-foreground" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-[10px]">
-                {viewMode === "split" && t("header.split")}
-                {viewMode === "editor" && t("header.editorOnly")}
-                {viewMode === "preview" && t("header.previewOnly")}
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onCycleViewMode}>
+                    {viewMode === "split" ? <Columns2 className="w-3.5 h-3.5 text-muted-foreground" /> : viewMode === "editor" ? <Code2 className="w-3.5 h-3.5 text-muted-foreground" /> : <Eye className="w-3.5 h-3.5 text-muted-foreground" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[10px]">
+                  {viewMode === "split" && t("header.split")}
+                  {viewMode === "editor" && t("header.editorOnly")}
+                  {viewMode === "preview" && t("header.previewOnly")}
+                </TooltipContent>
+              </Tooltip>
+            </div>
 
-            <Separator orientation="vertical" className="h-4" />
+            <Separator orientation="vertical" className="h-4 hidden md:inline" />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onCopyMarkdown}>
-                  {copied === "md" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-[10px]">{t("header.copyMarkdown")}</TooltipContent>
-            </Tooltip>
+            <div className="hidden md:flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onCopyMarkdown}>
+                    {copied === "md" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[10px]">{t("header.copyMarkdown")}</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onCopyHTML}>
-                  {copied === "html" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-[10px]">{t("header.copyHTML")}</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onCopyHTML}>
+                    {copied === "html" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[10px]">{t("header.copyHTML")}</TooltipContent>
+              </Tooltip>
+            </div>
 
-            <Separator orientation="vertical" className="h-4" />
+            <Separator orientation="vertical" className="h-4 hidden md:inline" />
           </>
         )}
 
@@ -249,11 +261,11 @@ export const Header = ({
           <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
         </Button>
 
-        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onExport}>
+        <Button variant="ghost" size="icon" className="w-7 h-7 hidden sm:flex" onClick={onExport}>
           <Download className="w-3.5 h-3.5 text-muted-foreground" />
         </Button>
 
-        <Separator orientation="vertical" className="h-4" />
+        <Separator orientation="vertical" className="h-4 hidden sm:inline" />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -263,8 +275,6 @@ export const Header = ({
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-[10px]">{t("header.toggleTheme")}</TooltipContent>
         </Tooltip>
-
-        <Separator orientation="vertical" className="h-4" />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -276,6 +286,7 @@ export const Header = ({
             {langLabel === "EN" ? "Español" : "English"}
           </TooltipContent>
         </Tooltip>
+
       </div>
     </header>
   );

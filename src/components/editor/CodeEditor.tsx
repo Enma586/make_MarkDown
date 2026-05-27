@@ -145,10 +145,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
           onDrop={handleDrop}
           placeholder={placeholder || t("editor.placeholder")}
           spellCheck={false}
-          className="w-full h-full bg-transparent p-12 font-mono text-[13px] md:text-sm leading-relaxed outline-none resize-none text-foreground placeholder:text-muted-foreground/20 selection:bg-primary/20 relative z-10 custom-scrollbar"
+          className="w-full h-full bg-transparent p-4 sm:p-6 md:p-8 lg:p-12 font-mono text-xs sm:text-sm leading-relaxed outline-none resize-none text-foreground placeholder:text-muted-foreground/20 selection:bg-primary/20 relative z-10 custom-scrollbar"
         />
 
-        <div className="absolute bottom-6 left-10 flex gap-8 text-[9px] font-mono text-muted-foreground uppercase tracking-[0.3em] pointer-events-none z-20 opacity-50">
+        <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-10 sm:right-auto flex flex-wrap gap-x-6 gap-y-1 text-[9px] font-mono text-muted-foreground uppercase tracking-[0.3em] pointer-events-none z-20 opacity-50">
           <div className="flex items-center gap-2">
             <span className="w-1 h-1 rounded-full bg-primary" />
             {t("editor.lines")}: {value.split("\n").length}

@@ -64,13 +64,14 @@ export function App() {
   }, [aiError]);
 
   useEffect(() => {
-    if (isRestored && content === getDefaultContent(t)) {
-      const saved = restore();
-      if (saved && saved !== getDefaultContent(t)) {
-        setShowRestoreBanner(true);
-      }
+    if (!isRestored) return;
+    const defaultContent = getDefaultContent(t);
+    if (content !== defaultContent) return;
+    const saved = restore();
+    if (saved && saved !== defaultContent) {
+      setShowRestoreBanner(true);
     }
-  }, [isRestored]);
+  }, [isRestored, content, restore, t]);
 
   const handleRestore = () => {
     const saved = restore();
@@ -125,7 +126,6 @@ export function App() {
     setLanguage(newLang);
   }, [language]);
 
-  const textareaRef = editorRef.current?.textareaRef;
   const sidebarContent = <BlueprintSidebar onInject={actions.handleInject} />;
 
   return (
@@ -224,7 +224,6 @@ export function App() {
             showSearch={showSearch}
             showToc={showToc}
             editorRef={editorRef}
-            textareaRef={textareaRef!}
             onContentChange={setContent}
             onSmartPaste={actions.handleSmartPaste}
             onTocNavigate={handleTocNavigate}

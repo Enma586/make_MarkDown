@@ -53,7 +53,7 @@ export const TableOfContents = ({ content, onNavigate }: TableOfContentsProps) =
 
   if (items.length === 0) {
     return (
-      <div className="w-52 shrink-0 border-l border-border/20 bg-muted/10 flex flex-col">
+      <div className="w-44 lg:w-52 shrink-0 border-l border-border/20 bg-muted/10 flex flex-col">
         <div className="px-3 py-2.5 border-b border-border/20 flex items-center gap-2">
           <ListTree className="w-3.5 h-3.5 text-muted-foreground/50" />
           <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
@@ -70,8 +70,8 @@ export const TableOfContents = ({ content, onNavigate }: TableOfContentsProps) =
   }
 
   return (
-    <div className="w-52 shrink-0 border-l border-border/20 bg-muted/10 flex flex-col">
-      <div className="px-3 py-2.5 border-b border-border/20 flex items-center gap-2">
+    <div className="w-44 lg:w-52 shrink-0 border-l border-border/20 bg-muted/10 flex flex-col">
+      <div className="px-2 lg:px-3 py-2.5 border-b border-border/20 flex items-center gap-2">
         <ListTree className="w-3.5 h-3.5 text-muted-foreground/50" />
         <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
           {t("preview.contents")}
