@@ -1,5 +1,5 @@
 import type { AISettings } from "@/hooks/use-ai-settings";
-import { extractEssentialCode, detectCodeLanguage } from "@/lib/file-utils";
+import { extractEssentialCode, detectCodeLanguage, generateFileDescription, getLanguage } from "@/lib/file-utils";
 
 const SYSTEM_PROMPT = `You are a technical documentation assistant. Analyze source code and produce clean, well-structured Markdown documentation.
 
@@ -31,6 +31,14 @@ Structure:
 \`\`\`
 
 IMPORTANT: Never modify the actual code. Only add documentation around it.`;
+
+const DESCRIBE_SYSTEM_PROMPT = `You are a code documentation assistant. Provide a brief 1-2 line description of what a source file does.
+Rules:
+- Output ONLY the description, nothing else.
+- Start with what the file is (component, hook, service, utility, etc.).
+- Mention its main purpose or responsibility.
+- Be concise and accurate.
+- Do NOT output markdown formatting, code blocks, or headings.`;
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -65,6 +73,10 @@ function truncateToTokens(text: string, maxTokens: number): string {
     result +
     `\n\n// ... [truncated: showing ${truncatedLines} of ${totalLines} lines to fit token limit]`
   );
+}
+
+function isLocalUrl(url: string): boolean {
+  return /localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(url);
 }
 
 async function callAPI(
@@ -106,6 +118,36 @@ async function callAPI(
   return content.trim();
 }
 
+function generateFallbackStructure(code: string, filename: string): string {
+  const lang = getLanguage(filename);
+  const lines = code.split("\n");
+  const description = generateFileDescription(code, filename);
+  const exports: string[] = [];
+  const exportRegex = /export\s+(?:default\s+)?(?:function|const|class|interface|type)\s+(\w+)/g;
+  let m;
+  while ((m = exportRegex.exec(code)) !== null) exports.push(m[1]);
+
+  let md = `# ${filename}\n\n`;
+  md += `> ${description}\n\n`;
+  md += `| Property | Value |\n|----------|-------|\n`;
+  md += `| Language | \`${lang}\` |\n`;
+  md += `| Lines | ${lines.length} |\n`;
+  if (exports.length > 0) md += `| Exports | \`${exports.join(", ")}\` |\n`;
+  md += `\n---\n\n`;
+
+  md += `## Overview\n\n`;
+  md += `File \`${filename}\` (${lang}, ${lines.length} lines).\n`;
+  if (exports.length > 0) {
+    md += `\nExports: \`${exports.join("`, `")}\`.\n`;
+  }
+
+  return md;
+}
+
+function generateFallbackDescription(code: string, filename: string): string {
+  return generateFileDescription(code, filename);
+}
+
 export async function structureWithAI(
   code: string,
   filename: string,
@@ -113,6 +155,18 @@ export async function structureWithAI(
 ): Promise<string> {
   const ext = filename.split(".").pop()?.toLowerCase() || "";
   const isDocFile = ["md", "mdx", "txt", "rst", "adoc"].includes(ext);
+
+  if (isDocFile) {
+    return code;
+  }
+
+  const isLocal = isLocalUrl(settings.apiUrl);
+  const isRunningOnVercel = typeof window !== "undefined" && window.location.hostname !== "localhost";
+
+  if (isLocal && isRunningOnVercel) {
+    return generateFallbackStructure(code, filename);
+  }
+
   const isLargeFile = code.length > MAX_INPUT_TOKENS * CHARS_PER_TOKEN;
 
   let processedCode = code;
@@ -126,82 +180,89 @@ export async function structureWithAI(
   const totalRequestTokens = codeTokens + SYSTEM_PROMPT_TOKENS + WRAPPER_TOKENS;
   const budgetTokens = MAX_INPUT_TOKENS;
 
-  if (totalRequestTokens <= budgetTokens) {
-    const sizeNote = isLargeFile && !isDocFile
-      ? `\n\nNOTE: This file was large (${code.split("\n").length} lines). Only essential code sections (${processedCode.split("\n").length} lines) were extracted for documentation.`
-      : "";
-    const userPrompt = `Analyze this file and produce structured documentation.${sizeNote}\n\nFilename: ${filename}\n\n\`\`\`\n${processedCode}\n\`\`\``;
-    return callAPI(
-      [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      settings,
-      4000,
-    );
-  }
-
-  const lines = processedCode.split("\n");
-  const totalLines = lines.length;
-  const chunkSize = Math.max(50, Math.floor(totalLines / 3));
-  const chunks: string[] = [];
-
-  for (let i = 0; i < lines.length; i += chunkSize) {
-    chunks.push(lines.slice(i, i + chunkSize).join("\n"));
-  }
-
-  const chunkResults: string[] = [];
-
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    const startLine = i * chunkSize + 1;
-    const endLine = Math.min((i + 1) * chunkSize, totalLines);
-
-    const truncated = truncateToTokens(chunk, MAX_INPUT_TOKENS);
-    const userPrompt = `This is PART ${i + 1} of ${chunks.length} of a file (${filename}, lines ${startLine}-${endLine} of ${totalLines}). Produce documentation for this part only. Use ### headings for each section.\n\n\`\`\`\n${truncated}\n\`\`\``;
-
-    const result = await callAPI(
-      [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      settings,
-      3000,
-    );
-
-    chunkResults.push(result);
-
-    if (i < chunks.length - 1) {
-      await new Promise((r) => setTimeout(r, CHUNK_DELAY_MS));
+  try {
+    if (totalRequestTokens <= budgetTokens) {
+      const sizeNote = isLargeFile && !isDocFile
+        ? `\n\nNOTE: This file was large (${code.split("\n").length} lines). Only essential code sections (${processedCode.split("\n").length} lines) were extracted for documentation.`
+        : "";
+      const userPrompt = `Analyze this file and produce structured documentation.${sizeNote}\n\nFilename: ${filename}\n\n\`\`\`\n${processedCode}\n\`\`\``;
+      return await callAPI(
+        [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        settings,
+        4000,
+      );
     }
+
+    const lines = processedCode.split("\n");
+    const totalLines = lines.length;
+    const chunkSize = Math.max(50, Math.floor(totalLines / 3));
+    const chunks: string[] = [];
+
+    for (let i = 0; i < lines.length; i += chunkSize) {
+      chunks.push(lines.slice(i, i + chunkSize).join("\n"));
+    }
+
+    const chunkResults: string[] = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const startLine = i * chunkSize + 1;
+      const endLine = Math.min((i + 1) * chunkSize, totalLines);
+
+      const truncated = truncateToTokens(chunk, MAX_INPUT_TOKENS);
+      const userPrompt = `This is PART ${i + 1} of ${chunks.length} of a file (${filename}, lines ${startLine}-${endLine} of ${totalLines}). Produce documentation for this part only. Use ### headings for each section.\n\n\`\`\`\n${truncated}\n\`\`\``;
+
+      const result = await callAPI(
+        [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        settings,
+        3000,
+      );
+
+      chunkResults.push(result);
+
+      if (i < chunks.length - 1) {
+        await new Promise((r) => setTimeout(r, CHUNK_DELAY_MS));
+      }
+    }
+
+    const originalLines = code.split("\n").length;
+    return `# ${filename}\n\n> Auto-generated documentation (processed in ${chunks.length} chunks due to file size).\n\n| Property | Value |\n|----------|-------|\n| Original Lines | ${originalLines} |\n| Processed Lines | ${totalLines} |\n| Chunks | ${chunks.length} |\n\n---\n\n${chunkResults.join("\n\n---\n\n")}`;
+  } catch {
+    return generateFallbackStructure(code, filename);
   }
-
-  const originalLines = code.split("\n").length;
-  return `# ${filename}\n\n> Auto-generated documentation (processed in ${chunks.length} chunks due to file size).\n\n| Property | Value |\n|----------|-------|\n| Original Lines | ${originalLines} |\n| Processed Lines | ${totalLines} |\n| Chunks | ${chunks.length} |\n\n---\n\n${chunkResults.join("\n\n---\n\n")}`;
 }
-
-const DESCRIBE_SYSTEM_PROMPT = `You are a code documentation assistant. Provide a brief 1-2 line description of what a source file does.
-Rules:
-- Output ONLY the description, nothing else.
-- Start with what the file is (component, hook, service, utility, etc.).
-- Mention its main purpose or responsibility.
-- Be concise and accurate.
-- Do NOT output markdown formatting, code blocks, or headings.`;
 
 export async function describeFileWithAI(
   code: string,
   filename: string,
   settings: AISettings,
 ): Promise<string> {
-  const truncated = code.length > 3000 ? code.slice(0, 3000) + "\n// ... [truncated]" : code;
-  const userPrompt = `Analyze this source file and provide a brief 1-2 line description of its purpose.\n\nFilename: ${filename}\n\n\`\`\`\n${truncated}\n\`\`\``;
+  const isLocal = isLocalUrl(settings.apiUrl);
+  const isRunningOnVercel = typeof window !== "undefined" && window.location.hostname !== "localhost";
 
-  return callAPI(
-    [
-      { role: "system", content: DESCRIBE_SYSTEM_PROMPT },
-      { role: "user", content: userPrompt },
-    ],
-    settings,
-    150,
-  );
+  if (isLocal && isRunningOnVercel) {
+    return generateFallbackDescription(code, filename);
+  }
+
+  try {
+    const truncated = code.length > 3000 ? code.slice(0, 3000) + "\n// ... [truncated]" : code;
+    const userPrompt = `Analyze this source file and provide a brief 1-2 line description of its purpose.\n\nFilename: ${filename}\n\n\`\`\`\n${truncated}\n\`\`\``;
+
+    return await callAPI(
+      [
+        { role: "system", content: DESCRIBE_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      settings,
+      150,
+    );
+  } catch {
+    return generateFallbackDescription(code, filename);
+  }
 }

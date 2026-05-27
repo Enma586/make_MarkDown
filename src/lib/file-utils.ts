@@ -65,6 +65,8 @@ function getLanguage(filename: string): string {
   return LANG_MAP[ext] || ext;
 }
 
+export { getLanguage };
+
 export function detectCodeLanguage(text: string): string | null {
   const patterns: Array<{ regex: RegExp; lang: string }> = [
     { regex: /^\s*(import\s+.*\s+from\s+['"]|export\s+(default\s+)?(function|const|class|async)|require\s*\()/m, lang: "typescript" },

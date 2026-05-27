@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 const STORAGE_KEY = "docu-stream-ai-settings";
 
@@ -9,10 +9,19 @@ export interface AISettings {
 }
 
 const DEFAULT_SETTINGS: AISettings = {
-  apiUrl: "http://localhost:11434/v1",
+  apiUrl: "",
   apiKey: "",
-  model: "llama3",
+  model: "",
 };
+
+function isRunningOnVercel(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+}
+
+function isLocalUrl(url: string): boolean {
+  return /localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(url);
+}
 
 export function useAISettings() {
   const [settings, setSettings] = useState<AISettings>(DEFAULT_SETTINGS);
@@ -22,7 +31,8 @@ export function useAISettings() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
+        const parsed = JSON.parse(saved);
+        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       }
     } catch {
       // ignore
@@ -32,10 +42,36 @@ export function useAISettings() {
 
   const updateSettings = useCallback((newSettings: AISettings) => {
     setSettings(newSettings);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+    } catch {
+      // localStorage might be full or unavailable
+    }
   }, []);
 
-  const isConfigured = settings.apiUrl.length > 0 && settings.model.length > 0;
+  const isConfigured = useMemo(() => {
+    const hasUrl = settings.apiUrl.length > 0;
+    const hasModel = settings.model.length > 0;
+    const onVercel = isRunningOnVercel();
 
-  return { settings, updateSettings, isConfigured, isLoaded };
+    if (!hasUrl || !hasModel) return false;
+
+    if (onVercel && isLocalUrl(settings.apiUrl)) {
+      return false;
+    }
+
+    return true;
+  }, [settings.apiUrl, settings.model]);
+
+  const configMessage = useMemo(() => {
+    const onVercel = isRunningOnVercel();
+    if (onVercel && (isLocalUrl(settings.apiUrl) || !settings.apiUrl)) {
+      return "Usa un proveedor cloud (Groq, OpenAI, OpenRouter) — Ollama/LM Studio no funcionan en Vercel";
+    }
+    if (!settings.apiUrl) return "Ingresa una URL de API compatible con OpenAI";
+    if (!settings.model) return "Elige o escribe el nombre del modelo";
+    return "";
+  }, [settings.apiUrl]);
+
+  return { settings, updateSettings, isConfigured, isLoaded, configMessage };
 }

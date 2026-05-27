@@ -39,7 +39,7 @@ export function App() {
 
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
-  const { settings: aiSettings, updateSettings: updateAISettings, isConfigured: aiConfigured } = useAISettings();
+  const { settings: aiSettings, updateSettings: updateAISettings, isConfigured: aiConfigured, configMessage: aiConfigMessage } = useAISettings();
   const { savedAt, isRestored, restore, clearSaved } = useAutoSave(content);
 
   const actions = useAppActions({
@@ -164,6 +164,7 @@ export function App() {
         onClose={() => setShowAISettings(false)}
         settings={aiSettings}
         onSave={updateAISettings}
+        configMessage={aiConfigMessage}
       />
 
       <RepoImporter
